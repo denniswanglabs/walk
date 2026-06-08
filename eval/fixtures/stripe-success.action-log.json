@@ -1,0 +1,9 @@
+{
+  "goal": "Map payment data",
+  "startUrl": "https://docs.stripe.com/get-started",
+  "mode": "linear",
+  "actions": [
+    {"step": 0, "kind": "click", "url": "https://docs.stripe.com/get-started", "title": "Get started | Stripe Documentation"},
+    {"step": 1, "kind": "done", "url": "https://docs.stripe.com/get-started/data-migrations/map-payment-data", "title": "Map payment data | Stripe Documentation"}
+  ]
+}
