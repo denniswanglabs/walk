@@ -1,0 +1,31 @@
+[
+  {
+    "id": "stripe-map-payment-data",
+    "url": "https://docs.stripe.com/get-started",
+    "goal": "Go to Get started, then Migrate to Stripe, then Migrate payment data, then click Map payment data and stop.",
+    "max_steps": 12,
+    "expect_url_contains": "map-payment-data"
+  },
+  {
+    "id": "nemoclaw-install-macos",
+    "url": "https://docs.nvidia.com/nemoclaw/latest/home",
+    "goal": "Open the page that explains how to install the NemoClaw CLI on macOS.",
+    "max_steps": 12,
+    "expect_url_contains": "install"
+  },
+  {
+    "id": "vercel-env-vars",
+    "url": "https://vercel.com/docs",
+    "goal": "Open the documentation page about environment variables.",
+    "max_steps": 12,
+    "expect_url_contains": "environment-variables"
+  },
+  {
+    "id": "wikipedia-nvidia-first-gpu",
+    "url": "https://en.wikipedia.org/wiki/Nvidia",
+    "goal": "Navigate to the section about Nvidia's first graphics accelerator.",
+    "max_steps": 12,
+    "expect_url_contains": "Nvidia",
+    "expect_title_contains": "Nvidia"
+  }
+]
