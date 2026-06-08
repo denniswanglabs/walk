@@ -86,3 +86,5 @@ node_modules/
 explainer-agent/out-*.mp4
 # eval outputs
 eval/results/
+__pycache__/
+*.pyc
