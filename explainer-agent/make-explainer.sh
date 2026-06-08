@@ -96,6 +96,13 @@ if [ -s /tmp/sandbox-attempted-log.json ]; then
 fi
 
 echo
+if [ "${SKIP_RENDER:-0}" = "1" ]; then
+  echo "[3/4] SKIP_RENDER=1 — skipping Remotion render (navigation-only run)."
+  echo
+  echo "DONE. Navigation complete (render skipped)."
+  exit 0
+fi
+
 echo "[3/4] Rendering Remotion composition..."
 cd "$HERE/remotion"
 ./node_modules/.bin/remotion render src/index.ts Explainer "$OUT_MP4" --concurrency=8 --log=error 2>&1 | tail -3
