@@ -1,4 +1,4 @@
-# Walkthrough Agent
+# Walk Agent
 
 > Autonomous AI agent that turns a URL and a goal into a polished tutorial video — Nemotron-3-Super-120B picks every action, NemoClaw sandboxes it, Remotion renders it. No human in the loop.
 

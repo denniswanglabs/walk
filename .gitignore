@@ -80,3 +80,9 @@ venv/
 # OS
 Thumbs.db
 ehthumbs.db
+
+# build / run artifacts
+node_modules/
+explainer-agent/out-*.mp4
+# eval outputs
+eval/results/
