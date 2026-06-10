@@ -87,17 +87,17 @@ for port in 8081 8082; do
   [ -n "$pid" ] && { echo "  killing stale listener on :$port (pid $pid)"; kill "$pid" 2>/dev/null; }
 done
 # poll.sh runs as `bash poll.sh` (cwd not in cmdline), so match that pattern.
-pkill -f "bash poll.sh" 2>/dev/null && echo "  killed stale poll.sh"
+pkill -f "walk/explainer-agent/observe-host/poll.sh" 2>/dev/null && echo "  killed stale poll.sh"
 sleep 1
 
 echo "  starting Flask API :8082"
-( cd "$OBSERVE/dashboard" && BROWSER=none nohup python3 server.py > /tmp/dashboard-server.log 2>&1 & )
+( cd "$OBSERVE/dashboard" && BROWSER=none nohup python3 server.py > /tmp/walk-dashboard-server.log 2>&1 & )
 
 echo "  starting static dashboard :8081"
-( cd "$OBSERVE/public" && nohup python3 -m http.server 8081 --bind 127.0.0.1 > /tmp/dashboard-static.log 2>&1 & )
+( cd "$OBSERVE/public" && nohup python3 -m http.server 8081 --bind 127.0.0.1 > /tmp/walk-dashboard-static.log 2>&1 & )
 
 echo "  starting poll.sh (live frame + log mirror)"
-( cd "$OBSERVE" && nohup bash poll.sh > /tmp/poll.log 2>&1 & )
+( cd "$OBSERVE" && nohup bash "$OBSERVE/poll.sh" > /tmp/walk-poll.log 2>&1 & )
 
 sleep 3
 
