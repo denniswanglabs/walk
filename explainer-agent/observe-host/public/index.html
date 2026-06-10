@@ -24,7 +24,7 @@
     /* ============ Layout grid ============ */
     .app {
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto auto 1fr auto;
       height: 100vh;
       gap: 12px;
       padding: 14px;
@@ -104,6 +104,29 @@
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(132,204,22,0.6); }
       100% { box-shadow: 0 0 0 12px rgba(132,204,22,0); }
+    }
+
+    /* ============ Demo presets row (front-end only: fills URL + goal) ============ */
+    .presets {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+      padding: 0 4px;
+    }
+    .presets-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      color: var(--dim); margin-right: 4px;
+    }
+    .preset-chip {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 14px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.5px; font-family: inherit; cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .preset-chip:hover {
+      background: rgba(255,255,255,0.04); color: var(--accent); border-color: var(--accent);
+    }
+    .preset-chip.active {
+      background: rgba(132,204,22,0.12); color: var(--accent); border-color: var(--accent);
     }
 
     /* ============ Main view: live frame + log + diagram tabs ============ */
@@ -271,6 +294,15 @@
     <span id="status-pill" class="status-pill">
       <span class="dot"></span><span id="status-text">idle</span>
     </span>
+  </div>
+
+  <!-- ============ Demo presets (front-end only: click to fill URL + goal) ============ -->
+  <div class="presets">
+    <span class="presets-label">PRESETS</span>
+    <button class="preset-chip" data-preset="stripe-migrate">STRIPE · MIGRATE DATA</button>
+    <button class="preset-chip" data-preset="stripe-payment-page">STRIPE · PAYMENT PAGE</button>
+    <button class="preset-chip" data-preset="orinovate-cnc">ORINOVATE · CNC TOLERANCES</button>
+    <button class="preset-chip" data-preset="python-libref">PYTHON · LIBRARY REF</button>
   </div>
 
   <!-- ============ Main: live frame + side (log/diagram) ============ -->
@@ -539,6 +571,40 @@
       setStatus('failed', e.message);
       runBtn.disabled = false;
     }
+  });
+
+  // --------- Demo presets: fill URL + goal, then the user hits RUN ---------
+  // Pure front-end convenience for the booth — sets the two input fields so
+  // there's nothing to type. The agent, model, and pipeline are untouched;
+  // RUN AGENT reads inUrl/inGoal exactly as if they were typed by hand.
+  const PRESETS = {
+    'stripe-migrate': {
+      url: 'https://docs.stripe.com',
+      goal: 'Go to Get started, then go to Migrate to Stripe, then click on Migrate payment data, and finally stop after clicking Map payment data',
+    },
+    'stripe-payment-page': {
+      url: 'https://docs.stripe.com',
+      goal: 'Click on Payments, then go to build a payments page, after click on quickstarts guides, and finally stop after clicking Embed a full payment page on your site',
+    },
+    'orinovate-cnc': {
+      url: 'https://www.orinovate.com/',
+      goal: 'resources / design tips / CNC Machining/ stop after clicking CNC Machining Tolerances: ISO 2768, GD&T, and Cost Trade-Offs',
+    },
+    'python-libref': {
+      url: 'https://docs.python.org/3/',
+      goal: 'go to python 3.16, then library reference, and stop after clicking  introduction',
+    },
+  };
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const p = PRESETS[chip.dataset.preset];
+      if (!p) return;
+      inUrl.value = p.url;
+      inGoal.value = p.goal;
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      runBtn.focus(); // user can then just click RUN (or press Enter)
+    });
   });
 
   // --------- NEW PROJECT button: reset the log view + clear job state ---------
