@@ -7,6 +7,7 @@ import {
   interpolate,
   spring,
   Sequence,
+  Easing,
 } from "remotion";
 import actionLogRaw from "../public/action-log.json";
 
@@ -39,6 +40,12 @@ const computeCursorPath = (actions: any[]): CursorPathEntry[] => {
       const end = { x: a.click.x, y: a.click.y };
       out.push({ start: prev, end });
       prev = end;
+    } else if (a.kind === "scroll") {
+      // Scroll has no cursor target. Keep prev where it was but DON'T
+      // render the cursor during scroll. After the scroll step, the
+      // next click should enter off-screen (we reset prev=null).
+      out.push({ start: prev, end: prev ?? { x: SCREEN_W / 2, y: SCREEN_H / 2 } });
+      prev = null; // next click enters fresh
     } else {
       out.push({ start: prev, end: prev ?? { x: SCREEN_W / 2, y: SCREEN_H / 2 } });
     }
@@ -65,6 +72,8 @@ export const Explainer: React.FC = () => {
       <Sequence key={i} from={cursor} durationInFrames={duration}>
         {action.kind === "click"
           ? <ClickStep action={action} index={i} cursor={path} />
+          : action.kind === "scroll"
+          ? <ScrollStep action={action} index={i} cursor={path} />
           : <DoneStep action={action} cursor={path} />}
       </Sequence>
     );
@@ -182,31 +191,25 @@ const ClickStep: React.FC<{ action: any; index: number; cursor: CursorPathEntry 
     ? spring({
         frame: frame - 18,
         fps,
-        config: { damping: 22, mass: 0.9, stiffness: 90 },
+        config: { damping: 25, mass: 0.9, stiffness: 40 },
       })
     : spring({
         frame,
         fps,
-        config: { damping: 22, mass: 0.9, stiffness: 90 },
+        config: { damping: 25, mass: 0.9, stiffness: 40 },
       });
 
-  const ringScale = interpolate(frame, [60, 84], [0.4, 2.6], {
+  // Caption appears at scene start (before the cursor begins moving) so it
+  // ANNOUNCES the action rather than narrating after the fact.
+  const captionOpacity = interpolate(frame, [0, 20], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const ringOpacity = interpolate(frame, [60, 84], [0.95, 0], {
+  const captionY = interpolate(frame, [0, 20], [40, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const captionOpacity = interpolate(frame, [72, 92], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const captionY = interpolate(frame, [72, 92], [40, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const afterOpacity = interpolate(frame, [100, 118], [0, 1], {
+  const afterOpacity = interpolate(frame, [70, 88], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -266,27 +269,6 @@ const ClickStep: React.FC<{ action: any; index: number; cursor: CursorPathEntry 
           objectFit: "cover",
         }}
       />
-
-      <svg
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: 1920,
-          height: 1080,
-          pointerEvents: "none",
-        }}
-      >
-        <circle
-          cx={cursorTargetX}
-          cy={cursorTargetY}
-          r={30 * ringScale}
-          fill="none"
-          stroke={ACCENT}
-          strokeWidth={5}
-          opacity={ringOpacity}
-        />
-      </svg>
 
       <Cursor x={cursorX} y={cursorY} />
 
@@ -349,10 +331,156 @@ const ClickStep: React.FC<{ action: any; index: number; cursor: CursorPathEntry 
   );
 };
 
+const ScrollStep: React.FC<{ action: any; index: number; cursor: CursorPathEntry }> = ({
+  action,
+  index,
+  cursor,
+}) => {
+  const frame = useCurrentFrame();
+
+  const scrollYBefore = Number(action.scrollYBefore) || 0;
+  const scrollYAfter  = Number(action.scrollYAfter)  || 0;
+
+  // Smooth scroll animation: frames 20-80 (60 frames = 2 sec) translate the
+  // full-page screenshot from -scrollYBefore to -scrollYAfter.
+  const scrollTop = interpolate(
+    frame,
+    [20, 80],
+    [-scrollYBefore, -scrollYAfter],
+    {
+      easing: Easing.inOut(Easing.cubic),
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }
+  );
+
+  // Cursor was at the previous click position. Fade it out at the start of
+  // the scroll step (no cursor while the page is moving).
+  const cursorOpacity = interpolate(frame, [0, 14], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cursorPos = cursor.end; // = previous click position (or screen-center)
+
+  // Caption announces the action at scene start.
+  const captionOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const captionY = interpolate(frame, [0, 20], [40, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Prefer the full-page screenshot. Fallback to before-screenshot if missing.
+  const src = action.screenshotFullPage
+    ? stripRun(action.screenshotFullPage)
+    : stripRun(action.screenshotBefore);
+
+  const directionLabel = action.direction === "up" ? "Scroll up" : "Scroll down";
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: BG }}>
+      {/* Clipped viewport "window" with the full-page screenshot sliding inside. */}
+      <div
+        style={{
+          position: "absolute",
+          left: OFFSET_X,
+          top: OFFSET_Y,
+          width: SCREEN_W,
+          height: SCREEN_H,
+          overflow: "hidden",
+          borderRadius: 14,
+          boxShadow:
+            "0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)",
+          backgroundColor: "#111",
+        }}
+      >
+        <Img
+          src={staticFile(src)}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: scrollTop,
+            width: SCREEN_W,
+            // height is intrinsic — full-page screenshot keeps its tall aspect
+            display: "block",
+          }}
+        />
+      </div>
+
+      {/* Cursor fades out — no cursor during scroll motion */}
+      <div style={{ opacity: cursorOpacity }}>
+        <Cursor x={OFFSET_X + cursorPos.x} y={OFFSET_Y + cursorPos.y} />
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 60,
+          left: 80,
+          right: 80,
+          opacity: captionOpacity,
+          transform: `translateY(${captionY}px)`,
+          background: "rgba(20, 20, 20, 0.86)",
+          backdropFilter: "blur(14px)",
+          border: `1px solid ${ACCENT}45`,
+          borderRadius: 18,
+          padding: "28px 36px",
+          display: "flex",
+          alignItems: "center",
+          gap: 28,
+          fontFamily: "Inter, -apple-system, system-ui, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 14,
+            background: ACCENT,
+            color: BG,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 34,
+            fontWeight: 800,
+            flexShrink: 0,
+          }}
+        >
+          {index + 1}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ color: "white", fontSize: 38, fontWeight: 600, lineHeight: 1.15 }}>
+            <span style={{ color: ACCENT }}>{directionLabel}</span>
+          </div>
+          <div
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 22,
+              lineHeight: 1.3,
+              maxWidth: 1400,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {action.description}
+          </div>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const DoneStep: React.FC<{ action: any; cursor: CursorPathEntry }> = ({ action, cursor }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   // No screenshot fade — visual continuity from the previous step
+  const badgeOpacity = interpolate(frame, [20, 40], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   const badgeScale = spring({
     frame: frame - 20,
     fps,
@@ -391,7 +519,8 @@ const DoneStep: React.FC<{ action: any; cursor: CursorPathEntry }> = ({ action, 
           position: "absolute",
           bottom: 80,
           left: "50%",
-          transform: `translateX(-50%) scale(${badgeScale})`,
+          transform: `translateX(-50%) scale(${0.9 + 0.1 * badgeScale})`,
+          opacity: badgeOpacity,
           background: ACCENT,
           color: BG,
           padding: "22px 48px",

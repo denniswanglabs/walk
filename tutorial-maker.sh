@@ -65,7 +65,7 @@ echo "[tutorial-maker] Step 2/4: NemoClaw agent run (BEAM=$BEAM BEAM_K=$BEAM_K).
 cd "$PROJECT"
 
 set +e
-BEAM="$BEAM" BEAM_K="$BEAM_K" NEMOCLAW_TIMEOUT="${NEMOCLAW_TIMEOUT:-900}" \
+BEAM="$BEAM" BEAM_K="$BEAM_K" OPEN_RESULT=0 NEMOCLAW_TIMEOUT="${NEMOCLAW_TIMEOUT:-900}" \
   ./explainer-agent/make-explainer.sh "$GOAL" "$URL" 15 \
   > "$WORKDIR/agent.log" 2>&1
 AGENT_EXIT=$?

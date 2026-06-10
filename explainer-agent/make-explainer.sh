@@ -86,7 +86,12 @@ for f in $files; do
 done
 echo "  pulled $(ls screenshots-sandbox | wc -l | tr -d ' ') screenshots"
 
-python3 /tmp/rewrite-log.py > /dev/null
+# rewrite-log.py lives permanently in the repo next to this script. The old
+# /tmp/rewrite-log.py location was wiped on reboot (macOS clears /tmp), which
+# silently broke the canonical Explainer path. Prefer the permanent copy.
+REWRITE_LOG="$HERE/rewrite-log.py"
+if [ ! -f "$REWRITE_LOG" ]; then REWRITE_LOG="/tmp/rewrite-log.py"; fi
+python3 "$REWRITE_LOG" > /dev/null
 echo "  action-log rewritten (paths + synthetic done if needed)"
 
 # Also copy attempted-log.json next to action-log so the watchdog can inspect
@@ -116,8 +121,16 @@ SIZE=$(ls -la "$OUT_MP4" | awk '{print $5}')
 echo "  rendered: $OUT_MP4 ($SIZE bytes)"
 
 echo
-echo "[4/4] Opening in QuickTime..."
-open "$OUT_MP4"
+# OPEN_RESULT=0 suppresses the QuickTime auto-open. tutorial-maker.sh (the
+# dashboard path) sets it so the finished video shows only in the dashboard,
+# not as a QuickTime popup on the host. Defaults to 1 so running this script
+# directly from a terminal still pops the result open as before.
+if [ "${OPEN_RESULT:-1}" = "1" ]; then
+  echo "[4/4] Opening in QuickTime..."
+  open "$OUT_MP4"
+else
+  echo "[4/4] Skipping QuickTime auto-open (OPEN_RESULT=0)."
+fi
 
 echo
 echo "DONE. Video: $OUT_MP4"
