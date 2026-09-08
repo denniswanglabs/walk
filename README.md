@@ -1,8 +1,8 @@
-# Walk Agent
+# Walk — the productized line of Walk Agent
 
 > Autonomous AI agent that turns a URL and a goal into a polished tutorial video — Nemotron-3-Super-120B picks every action, NemoClaw sandboxes it, Remotion renders it. No human in the loop.
 
-**Submission for NVIDIA NemoClaw Hackathon · GTC Taipei 2026.**
+**Productized line of [Walk Agent](https://github.com/denniswanglabs/promo-agent), winner of the NVIDIA Agent Hackathon (GTC Taipei 2026).** The hackathon entry itself is frozen in `promo-agent` at tag `v1.0-gtc-taipei-winner`; this repository carries the work after the win.
 **Built solo by [Luceo Studio](https://luceo-site.vercel.app).**
 
 **Demo video:** https://youtu.be/g-LlnJyLMzc
